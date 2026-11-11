@@ -265,4 +265,53 @@ class ProductoViewModelTest {
         // La banda solo habla de la conexión: un 500 necesita su aviso.
         assertEquals("No se pudo sincronizar: HTTP 500", estado.avisoRed)
     }
+
+    @Test
+    fun alSincronizarElPendienteElAvisoDejaDeDecirSinConexion() = runTest {
+
+        // Defecto D-01: el aviso «guardado sin conexión» quedaba tras sincronizar.
+        val repositorio = FakeProductoRepository().apply { registrarSinConexion = true }
+        val viewModel = nuevoViewModel(repositorio)
+
+        viewModel.onNombreChange("Paracetamol")
+        viewModel.onPrecioChange("13")
+        viewModel.onStockChange("258")
+        viewModel.registrar()
+
+        assertEquals(
+            "Producto \"Paracetamol\" guardado sin conexión: se enviará al sincronizar",
+            viewModel.uiState.value.mensajeExito
+        )
+
+        // PharmaSoft acepta el pendiente: vuelve con id del servidor y la fila local desaparece.
+        repositorio.delServidor = listOf(Producto(id = 7L, nombre = "Paracetamol", precio = 13.0, stock = 258))
+        viewModel.sincronizar()
+
+        assertEquals(
+            "Producto \"Paracetamol\" sincronizado con PharmaSoft",
+            viewModel.uiState.value.mensajeExito
+        )
+        assertEquals(0, viewModel.uiState.value.pendientes)
+    }
+
+    @Test
+    fun mientrasSigaPendienteElAvisoSeConserva() = runTest {
+
+        val repositorio = FakeProductoRepository().apply { registrarSinConexion = true }
+        val viewModel = nuevoViewModel(repositorio)
+
+        viewModel.onNombreChange("Ibuprofeno")
+        viewModel.onPrecioChange("4.5")
+        viewModel.onStockChange("20")
+        viewModel.registrar()
+
+        repositorio.fallaAlSincronizar = FalloSesionException(ErrorSesion.SinConexion)
+        viewModel.sincronizar()
+
+        assertEquals(
+            "Producto \"Ibuprofeno\" guardado sin conexión: se enviará al sincronizar",
+            viewModel.uiState.value.mensajeExito
+        )
+        assertEquals(1, viewModel.uiState.value.pendientes)
+    }
 }
