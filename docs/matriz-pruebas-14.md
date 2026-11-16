@@ -46,7 +46,7 @@ En el paso 5, con `adb reverse` el modo avión también corta el túnel: al volv
 
 | ID | Paso | Dispositivo | Pasos para reproducir | Esperado | Obtenido | Gravedad | Estado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| D-01 | 5 | D1 y D2 | Modo avión → registrar producto → quitar modo avión → sincronizar | Al confirmarse el envío, el mensaje «guardado sin conexión» se oculta o cambia a «enviado» | Sigue el mensaje verde «Producto … guardado sin conexión: se enviará al sincronizar» aunque el producto ya no está pendiente | Baja (visual) | Abierto: se corrige en una versión siguiente (`versionCode` 2) |
+| D-01 | 5 | D1 y D2 | Modo avión → registrar producto → quitar modo avión → sincronizar | Al confirmarse el envío, el mensaje «guardado sin conexión» se oculta o cambia a «enviado» | Sigue el mensaje verde «Producto … guardado sin conexión: se enviará al sincronizar» aunque el producto ya no está pendiente | Baja (visual) | Corregido en código (commit `fix(productos): actualizar el aviso al sincronizar el pendiente`, con 2 pruebas unitarias); pendiente de verificación en dispositivo |
 
 ## Observaciones del entorno (no son defectos de la app)
 

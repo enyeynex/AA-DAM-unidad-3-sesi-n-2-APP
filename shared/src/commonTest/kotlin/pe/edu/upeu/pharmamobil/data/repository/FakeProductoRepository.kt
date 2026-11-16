@@ -35,6 +35,9 @@ class FakeProductoRepository(
 
     private var siguienteId = 1L
 
+    /** true: registrar guarda como sin conexión (id local negativo, pendiente). */
+    var registrarSinConexion = false
+
     override fun observar(): Flow<List<Producto>> =
         fallaAlObservar?.let { fallo -> flow { throw fallo } } ?: tabla
 
@@ -42,7 +45,7 @@ class FakeProductoRepository(
 
         fallaAlRegistrar?.let { throw it }
 
-        val guardado = producto.copy(id = siguienteId++)
+        val guardado = producto.copy(id = if (registrarSinConexion) -(siguienteId++) else siguienteId++)
         tabla.update { it + guardado }
         return guardado
     }

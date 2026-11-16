@@ -75,6 +75,7 @@ class ProductoViewModel(
                     _uiState.update {
                         it.copy(
                             fase = faseDe(productos),
+                            mensajeExito = mensajeTrasSincronizar(productos, it.mensajeExito),
                             pendientes = productos.count { p -> p.id < 0 && p.rechazo == null },
                             rechazados = productos.count { p -> p.rechazo != null || p.agotoIntentos }
                         )
@@ -121,6 +122,29 @@ class ProductoViewModel(
     }
 
     private var ultimosProductos: List<Producto> = emptyList()
+
+    /**
+     * Defecto D-01 (Guía 14, matriz de pruebas): el aviso «guardado sin
+     * conexión: se enviará al sincronizar» quedaba en pantalla aunque el
+     * producto ya se hubiera enviado. Se recuerda qué fila local lo originó
+     * para cambiar el texto cuando esa fila deja de estar pendiente.
+     */
+    private var avisoPendiente: Pair<Long, String>? = null
+
+    private fun mensajeTrasSincronizar(productos: List<Producto>, actual: String?): String? {
+        val (idLocal, nombre) = avisoPendiente ?: return actual
+        // El usuario ya empezó otro registro y el aviso se limpió: nada que actualizar.
+        if (actual == null) { avisoPendiente = null; return null }
+        val fila = productos.firstOrNull { it.id == idLocal }
+        return when {
+            // Sigue en cola: el aviso aún es cierto.
+            fila != null && fila.rechazo == null && !fila.agotoIntentos -> actual
+            // Rechazado o agotó intentos: lo explica el aviso rojo, no el verde.
+            fila != null -> { avisoPendiente = null; null }
+            // La fila local ya no existe: se envió y volvió con el id del servidor.
+            else -> { avisoPendiente = null; "Producto \"$nombre\" sincronizado con PharmaSoft" }
+        }
+    }
 
     /** Accion del init y del boton «Sincronizar». No devuelve datos: el Flow emite. */
     fun sincronizar() {
@@ -185,6 +209,11 @@ class ProductoViewModel(
             ).fold(
                 // Sin recargar nada: el producto ya esta en la tabla y el Flow emitio.
                 onSuccess = { producto ->
+                    avisoPendiente = if (producto.id < 0 && producto.rechazo == null) {
+                        producto.id to producto.nombre
+                    } else {
+                        null
+                    }
                     _uiState.update {
                         it.copy(
                             registrando = false,
